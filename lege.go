@@ -56,10 +56,6 @@ func (collection *Collection) addRune(r rune) {
 	collection.runes = append(collection.runes, r)
 }
 
-func (collection *Collection) trimLeftRunes(num int) {
-	collection.runes = collection.runes[num:]
-}
-
 func (collection *Collection) trimRightRunes(num int) {
 	if num <= len(collection.runes) {
 		collection.runes = collection.runes[:len(collection.runes)-num]
@@ -183,8 +179,7 @@ func (parser *Parser) ParseReader(reader io.Reader) (Collections, error) {
 
 		if !collecting { // if we're not collecting, we're looking for a start match
 			for _, startOption := range parser.options.getAllStarts() { // find a match with any of the possible starts
-				match, _ := windowMatchesString(window, startOption)
-				if match { // if the window matches a start option
+				if match, _ := windowMatchesString(window, startOption); match { // if the window matches a start option
 					collecting = true // go into collecting mode
 					boundary := parser.options.getCorrespondingBoundary(startOption)
 					if boundary == nil {
@@ -204,8 +199,7 @@ func (parser *Parser) ParseReader(reader io.Reader) (Collections, error) {
 		} else { // if we're collecting, we're looking for an end match and storing runes along the way
 			currentCollection := collections.getLast()
 			for _, endOption := range currentCollection.Boundary.Ends {
-				match, _ := windowMatchesString(window, endOption)
-				if match { // if the window matches an end option
+				if match, _ := windowMatchesString(window, endOption); match { // if the window matches an end option
 					collecting = false // leave collecting mode
 					// if we're stopping collection, since the window trails the current index, we need to reslice the current collection to take off
 					// the runes we just matched
