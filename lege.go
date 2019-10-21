@@ -88,6 +88,18 @@ func (options *ParseOptions) maxEndLength() (max int) {
 	return max
 }
 
+func (parser *Parser) newWindow() []rune {
+	maxStartLen := parser.options.maxStartLength()
+	maxEndLen := parser.options.maxEndLength()
+	windowSize := 0
+	if maxStartLen > maxEndLen {
+		windowSize = maxStartLen
+	} else {
+		windowSize = maxEndLen
+	}
+	return make([]rune, windowSize)
+}
+
 func (options *ParseOptions) getAllStarts() []string {
 	starts := make([]string, 0)
 	for _, boundary := range options.BoundaryOptions {
@@ -126,17 +138,10 @@ func NewParser(options *ParseOptions) (*Parser, error) {
 }
 
 // ParseReader takes a reader
-func (p *Parser) ParseReader(reader io.Reader) (Collections, error) {
+func (parser *Parser) ParseReader(reader io.Reader) (Collections, error) {
 	r := bufio.NewReader(reader)
-	maxStartLen := p.options.maxStartLength()
-	maxEndLen := p.options.maxEndLength()
-	windowSize := 0
-	if maxStartLen > maxEndLen {
-		windowSize = maxStartLen
-	} else {
-		windowSize = maxEndLen
-	}
-	window := make([]rune, windowSize)
+	window := parser.newWindow()
+	windowSize := len(window)
 	index := 0
 	lineCounter := 1
 	positionCounter := 1
@@ -177,11 +182,11 @@ func (p *Parser) ParseReader(reader io.Reader) (Collections, error) {
 		}
 
 		if !collecting { // if we're not collecting, we're looking for a start match
-			for _, startOption := range p.options.getAllStarts() { // find a match with any of the possible starts
+			for _, startOption := range parser.options.getAllStarts() { // find a match with any of the possible starts
 				match, _ := windowMatchesString(window, startOption)
 				if match { // if the window matches a start option
 					collecting = true // go into collecting mode
-					boundary := p.options.getCorrespondingBoundary(startOption)
+					boundary := parser.options.getCorrespondingBoundary(startOption)
 					if boundary == nil {
 						panic(fmt.Sprintf("boundary not found for start: %s", startOption))
 					}
