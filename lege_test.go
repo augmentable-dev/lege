@@ -11,7 +11,7 @@ func TestSingleCollection(t *testing.T) {
 	const src = `ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 	p, err := NewParser(&ParseOptions{
 		BoundaryOptions: []BoundaryOption{
-			BoundaryOption{Starts: []string{"ABC"}, Ends: []string{"G"}},
+			{Starts: []string{"ABC"}, Ends: []string{"G"}},
 		},
 	})
 	if err != nil {
@@ -46,7 +46,7 @@ func TestMultipleCollections(t *testing.T) {
 	const src = `<ABCD><EFGH><><IHJKLMNO><hello`
 	p, err := NewParser(&ParseOptions{
 		BoundaryOptions: []BoundaryOption{
-			BoundaryOption{Starts: []string{"<"}, Ends: []string{">"}},
+			{Starts: []string{"<"}, Ends: []string{">"}},
 		},
 	})
 	if err != nil {
@@ -68,7 +68,7 @@ func TestEmojiOptions(t *testing.T) {
 	const src = `ABCDE✅FGHIJKLMNOP✅QRSTUVWXYZ`
 	p, err := NewParser(&ParseOptions{
 		BoundaryOptions: []BoundaryOption{
-			BoundaryOption{Starts: []string{"✅"}, Ends: []string{"✅"}},
+			{Starts: []string{"✅"}, Ends: []string{"✅"}},
 		},
 	})
 	if err != nil {
@@ -88,16 +88,16 @@ func TestEmojiOptions(t *testing.T) {
 
 func TestCStyleCodeComments(t *testing.T) {
 	const src = `
-	// A COMMENT
-	i_am = "some pseudo code"
-	log(i_am)
-	/* A MULTI
-	LINE COMMENT */
-	`
+        // A COMMENT
+        i_am = "some pseudo code"
+        log(i_am)
+        /* A MULTI
+        LINE COMMENT */
+        `
 	p, err := NewParser(&ParseOptions{
 		BoundaryOptions: []BoundaryOption{
-			BoundaryOption{Starts: []string{"//"}, Ends: []string{"\n"}},
-			BoundaryOption{Starts: []string{"/*"}, Ends: []string{"*/"}},
+			{Starts: []string{"//"}, Ends: []string{"\n"}},
+			{Starts: []string{"/*"}, Ends: []string{"*/"}},
 		},
 	})
 	if err != nil {
@@ -107,24 +107,24 @@ func TestCStyleCodeComments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{" A COMMENT", " A MULTI\n\tLINE COMMENT "}
+	want := []string{" A COMMENT", " A MULTI\n        LINE COMMENT "}
 	got := collections.Strings()
 	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("want: %v, got: %v", want, got)
+		t.Fatalf("want: %q, got: %q", want, got)
 	}
 	fmt.Println(collections[1], collections[1].StartLocation.Pos, collections[1].EndLocation.Pos)
 }
 
 func RubyStyleCodeComment(t *testing.T) {
 	const src = `
-	# A COMMENT
-	i_am = "some pseudo code"
-	log(i_am)
+        # A COMMENT
+        i_am = "some pseudo code"
+        log(i_am)
 
-	`
+        `
 	p, err := NewParser(&ParseOptions{
 		BoundaryOptions: []BoundaryOption{
-			BoundaryOption{Starts: []string{"#"}, Ends: []string{"\n"}},
+			{Starts: []string{"#"}, Ends: []string{"\n"}},
 		},
 	})
 	if err != nil {
