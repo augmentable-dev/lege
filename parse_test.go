@@ -17,7 +17,7 @@ func TestSingleCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	collections, err := p.ParseReader(strings.NewReader(src))
+	collections, err := p.Parse(strings.NewReader(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestMultipleCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	collections, err := p.ParseReader(strings.NewReader(src))
+	collections, err := p.Parse(strings.NewReader(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestEmojiOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	collections, err := p.ParseReader(strings.NewReader(src))
+	collections, err := p.Parse(strings.NewReader(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestCStyleCodeComments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	collections, err := p.ParseReader(strings.NewReader(src))
+	collections, err := p.Parse(strings.NewReader(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func RubyStyleCodeComment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	collections, err := p.ParseReader(strings.NewReader(src))
+	collections, err := p.Parse(strings.NewReader(src))
 	if err != nil {
 		t.Fatal(err)
 	}

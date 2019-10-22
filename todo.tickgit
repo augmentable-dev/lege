@@ -3,4 +3,8 @@ goal "tests" {
     task "use table based tests" {
         status = "pending"
     }
+
+    task "test for invalid parse options" {
+        status = "pending"
+    }
 }

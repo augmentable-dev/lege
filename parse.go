@@ -2,6 +2,7 @@ package lege
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"unicode/utf8"
@@ -16,54 +17,6 @@ type ParseOptions struct {
 type BoundaryOption struct {
 	Starts []string
 	Ends   []string
-}
-
-// Parser is used to parse a source for collections to extract
-type Parser struct {
-	options *ParseOptions
-}
-
-// Location represents location in an input string
-type Location struct {
-	Line int
-	Pos  int
-}
-
-// Collection represents a string that has been "plucked" from a source
-type Collection struct {
-	runes         []rune
-	Boundary      BoundaryOption
-	StartLocation Location
-	EndLocation   Location
-}
-
-// Collections is a list of *Collection
-type Collections []*Collection
-
-func (collections Collections) getLast() *Collection {
-	return collections[len(collections)-1]
-}
-
-// Strings returns each collection as a string, in a list of strings
-func (collections Collections) Strings() (s []string) {
-	for _, collection := range collections {
-		s = append(s, collection.String())
-	}
-	return s
-}
-
-func (collection *Collection) addRune(r rune) {
-	collection.runes = append(collection.runes, r)
-}
-
-func (collection *Collection) trimRightRunes(num int) {
-	if num <= len(collection.runes) {
-		collection.runes = collection.runes[:len(collection.runes)-num]
-	}
-}
-
-func (collection *Collection) String() string {
-	return string(collection.runes)
 }
 
 func (options *ParseOptions) maxStartLength() (max int) {
@@ -104,6 +57,17 @@ func (options *ParseOptions) getAllEnds() []string {
 	return ends
 }
 
+func (options *ParseOptions) getCorrespondingBoundary(start string) *BoundaryOption {
+	for _, boundary := range options.BoundaryOptions {
+		for _, s := range boundary.Starts {
+			if s == start {
+				return &boundary
+			}
+		}
+	}
+	return nil
+}
+
 func (options *ParseOptions) mustGetCorrespondingBoundary(start string) *BoundaryOption {
 	for _, boundary := range options.BoundaryOptions {
 		for _, s := range boundary.Starts {
@@ -115,8 +79,45 @@ func (options *ParseOptions) mustGetCorrespondingBoundary(start string) *Boundar
 	panic(fmt.Sprintf("boundary not found for start: %s", start))
 }
 
+// Validate checks the parse options and returns an error if they are invalid
+func (options *ParseOptions) Validate() error {
+
+	allBoundaries := options.BoundaryOptions
+	allStarts := options.getAllStarts()
+	allEnds := options.getAllEnds()
+
+	if len(allBoundaries) == 0 {
+		return errors.New("must supply at least one boundary")
+	}
+
+	if len(allStarts) == 0 {
+		return errors.New("must supply at least one start string")
+	}
+
+	if len(allEnds) == 0 {
+		return errors.New("must supply at least one end string")
+	}
+
+	for _, start := range allStarts {
+		if boundary := options.getCorrespondingBoundary(start); boundary == nil {
+			return fmt.Errorf("start boundary %q must have a corresponding end boundary", start)
+		}
+	}
+
+	return nil
+}
+
+// Parser is used to parse a source for collections to extract
+type Parser struct {
+	options *ParseOptions
+}
+
 // NewParser creates a *Parser
 func NewParser(options *ParseOptions) (*Parser, error) {
+	err := options.Validate()
+	if err != nil {
+		return nil, err
+	}
 	parser := &Parser{options: options}
 	return parser, nil
 }
@@ -146,8 +147,8 @@ func (parser *Parser) windowMatchesString(window []rune, compareTo string) (bool
 	return compareTo == winString, winString
 }
 
-// ParseReader takes a reader
-func (parser *Parser) ParseReader(reader io.Reader) (Collections, error) {
+// Parse takes a reader
+func (parser *Parser) Parse(reader io.Reader) (Collections, error) {
 	r := bufio.NewReader(reader)
 	window := parser.newWindow()
 	windowSize := len(window)
