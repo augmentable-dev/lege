@@ -1,7 +1,6 @@
 package lege
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -44,10 +43,9 @@ func TestSingleCollection(t *testing.T) {
 
 func TestMultipleCollections(t *testing.T) {
 	const src = `<ABCD><EFGH><><IHJKLMNO><hello`
+	boundaryOptions := []BoundaryOption{{Starts: []string{"<"}, Ends: []string{">"}}}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: []BoundaryOption{
-			{Starts: []string{"<"}, Ends: []string{">"}},
-		},
+		BoundaryOptions: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -56,20 +54,44 @@ func TestMultipleCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"ABCD", "EFGH", "", "IHJKLMNO"}
-	got := collections.Strings()
+	want := Collections{
+		&Collection{
+			runes:         []rune("ABCD"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 2},
+			EndLocation:   Location{Line: 1, Pos: 5},
+		},
+		&Collection{
+			runes:         []rune("EFGH"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 8},
+			EndLocation:   Location{Line: 1, Pos: 11},
+		},
+		// TODO fix the following
+		&Collection{
+			runes:         []rune(""),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 14},
+			EndLocation:   Location{Line: 1, Pos: 13},
+		},
+		&Collection{
+			runes:         []rune("IHJKLMNO"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 16},
+			EndLocation:   Location{Line: 1, Pos: 23},
+		},
+	}
+	got := collections
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("want: %v, got: %v", want, got)
 	}
-	fmt.Println(collections[1], collections[1].StartLocation.Pos, collections[1].EndLocation.Pos)
 }
 
 func TestEmojiOptions(t *testing.T) {
 	const src = `ABCDE✅FGHIJKLMNOP✅QRSTUVWXYZ`
+	boundaryOptions := []BoundaryOption{{Starts: []string{"✅"}, Ends: []string{"✅"}}}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: []BoundaryOption{
-			{Starts: []string{"✅"}, Ends: []string{"✅"}},
-		},
+		BoundaryOptions: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -78,12 +100,19 @@ func TestEmojiOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"FGHIJKLMNOP"}
-	got := collections.Strings()
+
+	want := Collections{
+		&Collection{
+			runes:         []rune("FGHIJKLMNOP"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 7},
+			EndLocation:   Location{Line: 1, Pos: 17},
+		},
+	}
+	got := collections
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("want: %v, got: %v", want, got)
 	}
-	fmt.Println(collections[0], collections[0].StartLocation.Pos, collections[0].EndLocation.Pos)
 }
 
 func TestCStyleCodeComments(t *testing.T) {
@@ -93,12 +122,13 @@ func TestCStyleCodeComments(t *testing.T) {
         log(i_am)
         /* A MULTI
         LINE COMMENT */
-        `
+		`
+	boundaryOptions := []BoundaryOption{
+		{Starts: []string{"//"}, Ends: []string{"\n"}},
+		{Starts: []string{"/*"}, Ends: []string{"*/"}},
+	}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: []BoundaryOption{
-			{Starts: []string{"//"}, Ends: []string{"\n"}},
-			{Starts: []string{"/*"}, Ends: []string{"*/"}},
-		},
+		BoundaryOptions: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -107,25 +137,40 @@ func TestCStyleCodeComments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{" A COMMENT", " A MULTI\n        LINE COMMENT "}
-	got := collections.Strings()
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("want: %q, got: %q", want, got)
+	want := Collections{
+		// TODO address the -1
+		&Collection{
+			runes:         []rune(" A COMMENT"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 12},
+			EndLocation:   Location{Line: 2, Pos: -1},
+		},
+		&Collection{
+			runes:         []rune(" A MULTI\n        LINE COMMENT "),
+			Boundary:      boundaryOptions[1],
+			StartLocation: Location{Line: 4, Pos: 11},
+			EndLocation:   Location{Line: 5, Pos: 21},
+		},
 	}
-	fmt.Println(collections[1], collections[1].StartLocation.Pos, collections[1].EndLocation.Pos)
+	got := collections
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("want: %v, got: %v", want, got)
+	}
+
 }
 
-func RubyStyleCodeComment(t *testing.T) {
+func TestRubyStyleCodeComment(t *testing.T) {
 	const src = `
         # A COMMENT
         i_am = "some pseudo code"
         log(i_am)
 
-        `
+		`
+	boundaryOptions := []BoundaryOption{
+		{Starts: []string{"#"}, Ends: []string{"\n"}},
+	}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: []BoundaryOption{
-			{Starts: []string{"#"}, Ends: []string{"\n"}},
-		},
+		BoundaryOptions: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -134,8 +179,16 @@ func RubyStyleCodeComment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{" A COMMENT"}
-	got := collections.Strings()
+	want := Collections{
+		// TODO address the -1
+		&Collection{
+			runes:         []rune(" A COMMENT"),
+			Boundary:      boundaryOptions[0],
+			StartLocation: Location{Line: 1, Pos: 11},
+			EndLocation:   Location{Line: 2, Pos: -1},
+		},
+	}
+	got := collections
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("want: %v, got: %v", want, got)
 	}
