@@ -81,7 +81,9 @@ func (options *ParseOptions) mustGetCorrespondingBoundary(start string) *Boundar
 
 // Validate checks the parse options and returns an error if they are invalid
 func (options *ParseOptions) Validate() error {
-
+	if options.BoundaryOptions == nil {
+		return errors.New("must supply boundary options")
+	}
 	allBoundaries := options.BoundaryOptions
 	allStarts := options.getAllStarts()
 	allEnds := options.getAllEnds()
