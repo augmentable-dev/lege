@@ -101,7 +101,7 @@ func (options *ParseOptions) Validate() error {
 	}
 
 	for _, start := range allStarts {
-		if boundary := options.getCorrespondingBoundary(start); boundary == nil {
+		if boundary := options.getCorrespondingBoundary(start); boundary == nil { // TODO reinspect this check, not sure if it makes sense
 			return fmt.Errorf("start boundary %q must have a corresponding end boundary", start)
 		}
 	}
