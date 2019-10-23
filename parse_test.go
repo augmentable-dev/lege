@@ -6,10 +6,39 @@ import (
 	"testing"
 )
 
+func TestInvalidOptions(t *testing.T) {
+	invalidOptions := map[string]*ParseOptions{
+		"NilOptions":    nil,
+		"NilBoundaries": &ParseOptions{},
+		"EmptyBoundary": &ParseOptions{
+			Boundaries: []Boundary{},
+		},
+		"NilStarts": &ParseOptions{
+			Boundaries: []Boundary{
+				Boundary{Starts: nil, Ends: []string{"\n"}},
+			},
+		},
+		"NilEnds": &ParseOptions{
+			Boundaries: []Boundary{
+				Boundary{Starts: []string{"//"}, Ends: nil},
+			},
+		},
+	}
+
+	for name, opt := range invalidOptions {
+		t.Run(name, func(t *testing.T) {
+			_, err := NewParser(opt)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestSingleCollection(t *testing.T) {
 	const src = `ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: []BoundaryOption{
+		Boundaries: []Boundary{
 			{Starts: []string{"ABC"}, Ends: []string{"G"}},
 		},
 	})
@@ -43,9 +72,9 @@ func TestSingleCollection(t *testing.T) {
 
 func TestMultipleCollections(t *testing.T) {
 	const src = `<ABCD><EFGH><><IHJKLMNO><hello`
-	boundaryOptions := []BoundaryOption{{Starts: []string{"<"}, Ends: []string{">"}}}
+	boundaryOptions := []Boundary{{Starts: []string{"<"}, Ends: []string{">"}}}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: boundaryOptions,
+		Boundaries: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -89,9 +118,9 @@ func TestMultipleCollections(t *testing.T) {
 
 func TestEmojiOptions(t *testing.T) {
 	const src = `ABCDE✅FGHIJKLMNOP✅QRSTUVWXYZ`
-	boundaryOptions := []BoundaryOption{{Starts: []string{"✅"}, Ends: []string{"✅"}}}
+	boundaryOptions := []Boundary{{Starts: []string{"✅"}, Ends: []string{"✅"}}}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: boundaryOptions,
+		Boundaries: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -123,12 +152,12 @@ func TestCStyleCodeComments(t *testing.T) {
         /* A MULTI
         LINE COMMENT */
 		`
-	boundaryOptions := []BoundaryOption{
+	boundaryOptions := []Boundary{
 		{Starts: []string{"//"}, Ends: []string{"\n"}},
 		{Starts: []string{"/*"}, Ends: []string{"*/"}},
 	}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: boundaryOptions,
+		Boundaries: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -166,11 +195,11 @@ func TestRubyStyleCodeComment(t *testing.T) {
         log(i_am)
 
 		`
-	boundaryOptions := []BoundaryOption{
+	boundaryOptions := []Boundary{
 		{Starts: []string{"#"}, Ends: []string{"\n"}},
 	}
 	p, err := NewParser(&ParseOptions{
-		BoundaryOptions: boundaryOptions,
+		Boundaries: boundaryOptions,
 	})
 	if err != nil {
 		t.Fatal(err)
