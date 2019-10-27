@@ -13,14 +13,14 @@ func TestInvalidOptions(t *testing.T) {
 		"EmptyBoundary": &ParseOptions{
 			Boundaries: []Boundary{},
 		},
-		"NilStarts": &ParseOptions{
+		"EmptyStart": &ParseOptions{
 			Boundaries: []Boundary{
-				Boundary{Starts: nil, Ends: []string{"\n"}},
+				Boundary{Start: "", End: "\n"},
 			},
 		},
-		"NilEnds": &ParseOptions{
+		"EmptyEnd": &ParseOptions{
 			Boundaries: []Boundary{
-				Boundary{Starts: []string{"//"}, Ends: nil},
+				Boundary{Start: "//", End: ""},
 			},
 		},
 	}
@@ -39,7 +39,7 @@ func TestSingleCollection(t *testing.T) {
 	const src = `ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 	p, err := NewParser(&ParseOptions{
 		Boundaries: []Boundary{
-			{Starts: []string{"ABC"}, Ends: []string{"G"}},
+			{Start: "ABC", End: "G"},
 		},
 	})
 	if err != nil {
@@ -72,7 +72,7 @@ func TestSingleCollection(t *testing.T) {
 
 func TestMultipleCollections(t *testing.T) {
 	const src = `<ABCD><EFGH><><IHJKLMNO><hello`
-	boundaryOptions := []Boundary{{Starts: []string{"<"}, Ends: []string{">"}}}
+	boundaryOptions := []Boundary{{Start: "<", End: ">"}}
 	p, err := NewParser(&ParseOptions{
 		Boundaries: boundaryOptions,
 	})
@@ -118,7 +118,7 @@ func TestMultipleCollections(t *testing.T) {
 
 func TestEmojiOptions(t *testing.T) {
 	const src = `ABCDE✅FGHIJKLMNOP✅QRSTUVWXYZ`
-	boundaryOptions := []Boundary{{Starts: []string{"✅"}, Ends: []string{"✅"}}}
+	boundaryOptions := []Boundary{{Start: "✅", End: "✅"}}
 	p, err := NewParser(&ParseOptions{
 		Boundaries: boundaryOptions,
 	})
@@ -153,8 +153,8 @@ func TestCStyleCodeComments(t *testing.T) {
         LINE COMMENT */
 		`
 	boundaryOptions := []Boundary{
-		{Starts: []string{"//"}, Ends: []string{"\n"}},
-		{Starts: []string{"/*"}, Ends: []string{"*/"}},
+		{Start: "//", End: "\n"},
+		{Start: "/*", End: "*/"},
 	}
 	p, err := NewParser(&ParseOptions{
 		Boundaries: boundaryOptions,
@@ -196,7 +196,7 @@ func TestRubyStyleCodeComment(t *testing.T) {
 
 		`
 	boundaryOptions := []Boundary{
-		{Starts: []string{"#"}, Ends: []string{"\n"}},
+		{Start: "#", End: "\n"},
 	}
 	p, err := NewParser(&ParseOptions{
 		Boundaries: boundaryOptions,
